@@ -2,12 +2,12 @@ using PlaywrightSharp;
 
 namespace webgrep
 {
-    public sealed class FirefoxInstance : BrowserInstance
+    public sealed class WebkitInstance : BrowserInstance
     {
-        public FirefoxInstance()
+        public WebkitInstance()
         {
             playwright = Playwright.CreateAsync().GetAwaiter().GetResult();
-            browser = playwright.Firefox.LaunchAsync().GetAwaiter().GetResult();
+            browser = playwright.Webkit.LaunchAsync().GetAwaiter().GetResult();
             page = browser.NewPageAsync().GetAwaiter().GetResult();
         }
     }

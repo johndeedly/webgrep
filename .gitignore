@@ -2,3 +2,4 @@ bin/
 obj/
 .vscode/
 *.csproj
+Program.cs
