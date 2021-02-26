@@ -13,7 +13,7 @@ This work is licensed under a
 
 Add the following line(s) to your nuget includes:
 
-```
+```xml
 <ItemGroup>
     <PackageReference Include="PlaywrightSharp" Version="0.180.0" />
 </ItemGroup>
