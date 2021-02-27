@@ -7,61 +7,157 @@ namespace webgrep
 {
     public interface IBrowserInstance
     {
-        void ClickOn(string selector, int? timeout = 5000);
+        List<string> ErrorLog { get; }
+        Exception LastError { get; }
+
+        bool ClickOn(string selector, int? timeout = 5000);
         bool ElementIsAttached(string selector, int? timeout = 5000);
         string GetFormattedText(string selector, int? timeout = 5000);
         List<string> GetFormattedTextAll(string selector, int? timeout = 5000);
         string GetText(string selector, int? timeout = 5000);
         List<string> GetTextAll(string selector, int? timeout = 5000);
-        void KeyboardPressKey(string key);
-        void KeyboardTypeText(string text);
-        void NavigateTo(string url, int? timeout = 5000);
-        void TakeScreenshot(string filePath);
+        bool KeyboardPressKey(string key);
+        bool KeyboardTypeText(string text);
+        bool NavigateTo(string url, int? timeout = 5000);
+        bool TakeScreenshot(string filePath, int? timeout = 5000);
+        bool WaitDomContentLoaded(int? timeout = 5000);
     }
 
-    public abstract class BrowserInstance : IBrowserInstance, IDisposable
+    public abstract class BrowserInstance : IDisposable, IBrowserInstance
     {
         protected IPlaywright playwright;
         protected IBrowser browser;
         protected IPage page;
+        public List<string> ErrorLog { get; private set; }
+        public Exception LastError { get; protected set; }
 
         public BrowserInstance()
-        { }
-
-        public void NavigateTo(string url, int? timeout = 5000)
         {
-            page.GoToAsync(url, LifecycleEvent.Networkidle, timeout: timeout).Wait();
+            ErrorLog = new List<string>();
         }
 
-        public void ClickOn(string selector, int? timeout = 5000)
+        public bool NavigateTo(string url, int? timeout = 5000)
         {
-            page.ClickAsync(selector, timeout: timeout).Wait();
+            try
+            {
+                page.GoToAsync(url, LifecycleEvent.DOMContentLoaded, timeout: timeout).GetAwaiter().GetResult();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                ErrorLog.Add(ex.Message);
+                LastError = ex;
+                return false;
+            }
         }
 
-        public void KeyboardTypeText(string text)
+        public bool WaitDomContentLoaded(int? timeout = 5000)
         {
-            page.Keyboard.TypeAsync(text).Wait();
+            try
+            {
+                page.WaitForNavigationAsync(LifecycleEvent.DOMContentLoaded, timeout: timeout).GetAwaiter().GetResult();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                ErrorLog.Add(ex.Message);
+                LastError = ex;
+                return false;
+            }
         }
 
-        public void KeyboardPressKey(string key)
+        public bool ClickOn(string selector, int? timeout = 5000)
         {
-            page.Keyboard.PressAsync(key).Wait();
+            try
+            {
+                page.ClickAsync(selector, timeout: timeout).GetAwaiter().GetResult();
+                return true;
+            }
+            catch (TimeoutException ex)
+            {
+                ErrorLog.Add(ex.Message);
+                LastError = ex;
+                for (int i = 0; i < page.Frames.Length; i++)
+                {
+                    try
+                    {
+                        page.Frames[i].ClickAsync(selector, timeout: timeout).GetAwaiter().GetResult();
+                        return true;
+                    }
+                    catch (TimeoutException ex2)
+                    {
+                        ErrorLog.Add(ex2.Message);
+                        LastError = ex2;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                ErrorLog.Add(ex.Message);
+                LastError = ex;
+            }
+            return false;
         }
 
-        public void TakeScreenshot(string filePath)
+        public bool KeyboardTypeText(string text)
         {
-            page.ScreenshotAsync(filePath, true).Wait();
+            try
+            {
+                page.Keyboard.TypeAsync(text).GetAwaiter().GetResult();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                ErrorLog.Add(ex.Message);
+                LastError = ex;
+                return false;
+            }
+        }
+
+        public bool KeyboardPressKey(string key)
+        {
+            try
+            {
+                page.Keyboard.PressAsync(key).GetAwaiter().GetResult();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                ErrorLog.Add(ex.Message);
+                LastError = ex;
+                return false;
+            }
+        }
+
+        public bool TakeScreenshot(string filePath, int? timeout = 5000)
+        {
+            if (WaitDomContentLoaded(timeout))
+            {
+                try
+                {
+                    page.ScreenshotAsync(filePath, true).GetAwaiter().GetResult();
+                    return true;
+                }
+                catch (Exception ex)
+                {
+                    ErrorLog.Add(ex.Message);
+                    LastError = ex;
+                }
+            }
+            return false;
         }
 
         public bool ElementIsAttached(string selector, int? timeout = 5000)
         {
             try
             {
-                var elem = page.WaitForSelectorAsync(selector, WaitForState.Attached, timeout: timeout).GetAwaiter().GetResult();
-                return elem != null;
+                page.WaitForSelectorAsync(selector, WaitForState.Attached, timeout: timeout).GetAwaiter().GetResult();
+                return true;
             }
-            catch (TimeoutException)
+            catch (Exception ex)
             {
+                ErrorLog.Add(ex.Message);
+                LastError = ex;
                 return false;
             }
         }
@@ -73,9 +169,11 @@ namespace webgrep
                 string text = page.GetTextContentAsync(selector, timeout).GetAwaiter().GetResult();
                 return text.Trim();
             }
-            catch (TimeoutException ex)
+            catch (Exception ex)
             {
-                return ex.Message;
+                ErrorLog.Add(ex.Message);
+                LastError = ex;
+                return string.Empty;
             }
         }
 
@@ -91,7 +189,7 @@ namespace webgrep
                     list.Add(text.Trim());
                 }
             }
-            catch (TimeoutException ex)
+            catch (Exception ex)
             {
                 list.Add(ex.Message);
             }
@@ -105,9 +203,11 @@ namespace webgrep
                 string text = page.GetInnerTextAsync(selector, timeout).GetAwaiter().GetResult();
                 return text.Trim();
             }
-            catch (TimeoutException ex)
+            catch (Exception ex)
             {
-                return ex.Message;
+                ErrorLog.Add(ex.Message);
+                LastError = ex;
+                return string.Empty;
             }
         }
 
@@ -123,8 +223,10 @@ namespace webgrep
                     list.Add(text.Trim());
                 }
             }
-            catch (TimeoutException ex)
+            catch (Exception ex)
             {
+                ErrorLog.Add(ex.Message);
+                LastError = ex;
                 list.Add(ex.Message);
             }
             return list;
