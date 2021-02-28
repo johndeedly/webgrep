@@ -40,7 +40,16 @@ namespace webgrep
         {
             try
             {
-                page.GoToAsync(url, LifecycleEvent.DOMContentLoaded, timeout: timeout).GetAwaiter().GetResult();
+                try
+                {
+                    page.GoToAsync(url, LifecycleEvent.Networkidle, timeout: timeout).GetAwaiter().GetResult();
+                }
+                catch (TimeoutException ex)
+                {
+                    ErrorLog.Add(ex.Message);
+                    LastError = ex;
+                    page.WaitForNavigationAsync(LifecycleEvent.DOMContentLoaded, timeout: timeout).GetAwaiter().GetResult();
+                }
                 return true;
             }
             catch (Exception ex)
