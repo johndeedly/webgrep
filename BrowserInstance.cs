@@ -1,15 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using PlaywrightSharp;
 
 namespace webgrep
 {
     public interface IBrowserInstance : IFrameWrapper, IDisposable
     {
-        List<string> ErrorLog { get; }
-        Exception LastError { get; set; }
-
         bool KeyboardPressKey(string key);
         bool KeyboardTypeText(string text);
         bool NavigateTo(string url, int? timeout = 5000);
@@ -42,13 +40,17 @@ namespace webgrep
             {
                 try
                 {
-                    page.GoToAsync(url, LifecycleEvent.Networkidle, timeout: timeout).GetAwaiter().GetResult();
+                    Task.Run(() =>
+                        page.GoToAsync(url, LifecycleEvent.Networkidle, timeout: timeout))
+                        .GetAwaiter().GetResult();
                 }
                 catch (TimeoutException ex)
                 {
                     ErrorLog.Add(ex.Message);
                     LastError = ex;
-                    page.WaitForNavigationAsync(LifecycleEvent.DOMContentLoaded, timeout: timeout).GetAwaiter().GetResult();
+                    Task.Run(() =>
+                        page.WaitForNavigationAsync(LifecycleEvent.DOMContentLoaded, timeout: timeout))
+                        .GetAwaiter().GetResult();
                 }
                 return true;
             }
@@ -64,7 +66,8 @@ namespace webgrep
         {
             try
             {
-                page.Keyboard.TypeAsync(text).GetAwaiter().GetResult();
+                Task.Run(() => page.Keyboard.TypeAsync(text))
+                    .GetAwaiter().GetResult();
                 return true;
             }
             catch (Exception ex)
@@ -79,7 +82,8 @@ namespace webgrep
         {
             try
             {
-                page.Keyboard.PressAsync(key).GetAwaiter().GetResult();
+                Task.Run(() => page.Keyboard.PressAsync(key))
+                    .GetAwaiter().GetResult();
                 return true;
             }
             catch (Exception ex)
@@ -96,7 +100,8 @@ namespace webgrep
             {
                 try
                 {
-                    page.ScreenshotAsync(filePath, true).GetAwaiter().GetResult();
+                    Task.Run(() => page.ScreenshotAsync(filePath, true))
+                        .GetAwaiter().GetResult();
                     return true;
                 }
                 catch (Exception ex)
@@ -108,39 +113,40 @@ namespace webgrep
             return false;
         }
 
-        public bool WaitDomContentLoaded(int? timeout = 5000)
+        public IEnumerable<IElementWrapper> AttachedElements(string selector, int? timeout = 5000)
         {
-            return new FrameWrapper(page.MainFrame, this).WaitDomContentLoaded(timeout);
+            return new FrameWrapper(page.MainFrame, this)
+                .AttachedElements(selector, timeout);
         }
 
         public bool ClickOn(string selector, int? timeout = 5000)
         {
-            return new FrameWrapper(page.MainFrame, this).ClickOn(selector, timeout);
+            return new FrameWrapper(page.MainFrame, this)
+                .ClickOn(selector, timeout);
         }
 
         public bool ElementIsAttached(string selector, int? timeout = 5000)
         {
-            return new FrameWrapper(page.MainFrame, this).ElementIsAttached(selector, timeout);
-        }
-
-        public string GetText(string selector, int? timeout = 5000)
-        {
-            return new FrameWrapper(page.MainFrame, this).GetText(selector, timeout);
-        }
-
-        public List<string> GetTextAll(string selector, int? timeout = 5000)
-        {
-            return new FrameWrapper(page.MainFrame, this).GetTextAll(selector, timeout);
+            return new FrameWrapper(page.MainFrame, this)
+                .ElementIsAttached(selector, timeout);
         }
 
         public string GetFormattedText(string selector, int? timeout = 5000)
         {
-            return new FrameWrapper(page.MainFrame, this).GetFormattedText(selector, timeout);
+            return new FrameWrapper(page.MainFrame, this)
+                .GetFormattedText(selector, timeout);
         }
 
-        public List<string> GetFormattedTextAll(string selector, int? timeout = 5000)
+        public string GetText(string selector, int? timeout = 5000)
         {
-            return new FrameWrapper(page.MainFrame, this).GetFormattedTextAll(selector, timeout);
+            return new FrameWrapper(page.MainFrame, this)
+                .GetText(selector, timeout);
+        }
+
+        public bool WaitDomContentLoaded(int? timeout = 5000)
+        {
+            return new FrameWrapper(page.MainFrame, this)
+                .WaitDomContentLoaded(timeout);
         }
 
         ~BrowserInstance()
