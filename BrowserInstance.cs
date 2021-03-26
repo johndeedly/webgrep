@@ -113,10 +113,10 @@ namespace webgrep
             return false;
         }
 
-        public IEnumerable<IElementWrapper> AttachedElements(string selector, int? timeout = 5000)
+        public IEnumerable<IElementWrapper> AttachedElements(string selector)
         {
             return new FrameWrapper(page.MainFrame, this)
-                .AttachedElements(selector, timeout);
+                .AttachedElements(selector);
         }
 
         public bool ClickOn(string selector, int? timeout = 5000)

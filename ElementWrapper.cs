@@ -8,7 +8,7 @@ namespace webgrep
 {
     public interface IElementWrapper
     {
-        IEnumerable<IElementWrapper> AttachedElements(string selector, int? timeout = 5000);
+        IEnumerable<IElementWrapper> AttachedElements(string selector);
         bool ClickOn(int? timeout = 5000);
         bool ElementIsAttached(string selector, int? timeout = 5000);
         string GetFormattedText(int? timeout = 5000);
@@ -26,7 +26,7 @@ namespace webgrep
             this.frame = frame;
         }
 
-        public IEnumerable<IElementWrapper> AttachedElements(string selector, int? timeout = 5000)
+        public IEnumerable<IElementWrapper> AttachedElements(string selector)
         {
             try
             {

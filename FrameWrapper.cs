@@ -11,7 +11,7 @@ namespace webgrep
         List<string> ErrorLog { get; }
         Exception LastError { get; set; }
 
-        IEnumerable<IElementWrapper> AttachedElements(string selector, int? timeout = 5000);
+        IEnumerable<IElementWrapper> AttachedElements(string selector);
         bool ClickOn(string selector, int? timeout = 5000);
         bool ElementIsAttached(string selector, int? timeout = 5000);
         string GetFormattedText(string selector, int? timeout = 5000);
@@ -38,7 +38,7 @@ namespace webgrep
             this.instance = instance;
         }
 
-        public IEnumerable<IElementWrapper> AttachedElements(string selector, int? timeout = 5000)
+        public IEnumerable<IElementWrapper> AttachedElements(string selector)
         {
             try
             {
