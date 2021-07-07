@@ -13,6 +13,7 @@ namespace webgrep
         bool ElementIsAttached(string selector, int? timeout = 5000);
         string GetFormattedText(int? timeout = 5000);
         string GetText(int? timeout = 5000);
+        string GetAttribute(string name, int? timeout = 5000);
     }
 
     public class ElementWrapper : IElementWrapper
@@ -99,6 +100,23 @@ namespace webgrep
             {
                 string text = Task.Run(() =>
                     element.GetTextContentAsync(timeout))
+                    .GetAwaiter().GetResult();
+                return text.Trim();
+            }
+            catch (Exception ex)
+            {
+                frame.ErrorLog.Add(ex.Message);
+                frame.LastError = ex;
+                return string.Empty;
+            }
+        }
+
+        public string GetAttribute(string name, int? timeout = 5000)
+        {
+            try
+            {
+                string text = Task.Run(() =>
+                    element.GetAttributeAsync(name, timeout))
                     .GetAwaiter().GetResult();
                 return text.Trim();
             }
